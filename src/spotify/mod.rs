@@ -15,13 +15,15 @@ pub struct CreateTokenRequest {
 
 #[derive(FromForm)]
 pub struct RefreshTokenRequest {
-    token: String,
+    refresh_token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateTokenResponse {
     access_token: String,
     token_type: String,
+    expires_in: u32,
+    refresh_token: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -91,7 +93,7 @@ pub fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, Erro
 }
 
 pub fn refresh_token(req: RefreshTokenRequest) -> Result<RefreshTokenResponse, ErrorResponse> {
-    let body = format!("grant_type=refresh_token&refresh_token={}", req.token);
+    let body = format!("grant_type=refresh_token&refresh_token={}", req.refresh_token);
 
     let client = Client::new();
     let res = client

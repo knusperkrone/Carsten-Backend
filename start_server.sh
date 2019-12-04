@@ -1,0 +1,1 @@
+ROCKET_ENV=stage cargo run

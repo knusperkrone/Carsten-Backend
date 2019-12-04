@@ -1,1 +1,1 @@
-ROCKET_ENV=stage cargo run
+ROCKET_ENV=prod cargo run

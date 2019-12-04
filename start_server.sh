@@ -3,4 +3,5 @@ if [ "$(id -u)" == "0" ]; then
    exit 1
 fi
 
+sudo pkill -f chromi_tube_backend
 sudo ROCKET_ENV=production $(which cargo) run

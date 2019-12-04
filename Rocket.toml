@@ -21,7 +21,7 @@ address = "0.0.0.0"
 port = 80
 workers = 6
 keep_alive = 5
-log = "critical"
+log = "normal"
 secret_key = "aoQrXLvBiF2T467CV03YZrHGCfacLN8s0/1zoOGAAP8="
 limits = { forms = 32768 }
 # tls = { certs = "/path/to/certs.pem", key = "/path/to/key.pem" }

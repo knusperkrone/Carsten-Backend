@@ -4,7 +4,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 static TOKEN_URL: &'static str = "https://accounts.spotify.com/api/token";
-static REDIRECT_URL: &'static str = "https://example.com/callback";
+static REDIRECT_URL: &'static str = "http://spotitube.if-lab.de/api/spotify/callback";
 static PRIVATE_TOKEN: &'static str =
     "MmIyMTdhMzI4NTc2NDViNzllNjBkZGEwYTU2YjIyNjg6N2E4NTQ5NDMxZTljNGU0Yzk0ODAyYThmYmE2ZjVlOGQ";
 

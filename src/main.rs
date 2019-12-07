@@ -13,9 +13,13 @@ mod error;
 mod spotify;
 mod youtube;
 
+use std::io::Cursor;
+
 use spotify::{CreateTokenRequest, RefreshTokenRequest};
 
 use rocket::request::Form;
+use rocket::http::ContentType;
+use rocket::response::Response;
 use rocket::response::status::BadRequest;
 use rocket_contrib::json::JsonValue;
 
@@ -47,9 +51,16 @@ fn refresh_token(token: Form<RefreshTokenRequest>) -> Result<JsonValue, BadReque
 }
 
 #[get("/search?<q>")]
-fn search(q: String) -> Result<JsonValue, BadRequest<JsonValue>> {
+fn search(q: String) -> Result<Response<'static>, BadRequest<JsonValue>> {
     match youtube::search(q) {
-        Ok(resp) => Ok(json!(resp)),
+        Ok(resp) => { 
+            let resp_json = serde_json::to_string(&resp).unwrap();
+            Response::build()
+            .header(ContentType::JSON) 
+            .raw_header("Access-Control-Allow-Origin", "*")
+            .sized_body(Cursor::new(resp_json))
+            .ok()
+        },
         Err(e_resp) => {
             println!("Invalid search: {}", e_resp);
             Err(BadRequest(Some(json!(e_resp))))

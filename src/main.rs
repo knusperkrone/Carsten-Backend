@@ -18,14 +18,17 @@ use std::io::Cursor;
 use spotify::{CreateTokenRequest, RefreshTokenRequest};
 
 use rocket::request::Form;
-use rocket::http::ContentType;
+use rocket::http::{ContentType, Status};
 use rocket::response::Response;
 use rocket::response::status::BadRequest;
 use rocket_contrib::json::JsonValue;
 
 #[get("/")]
-fn root()-> &'static str {
-    "<!DOCTYPE html><html><head></head><body></body></html>"
+fn root()-> Result<Response<'static>, Status> {
+    Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new("<!DOCTYPE html><html><head></head><body></body></html>"))
+        .ok()
 }
 
 #[get("/robots.txt")]
@@ -34,8 +37,11 @@ fn robots()-> &'static str {
 }
 
 #[get("/callback")]
-fn login_callback() -> &'static str {
-    "<!DOCTYPE html><html><head></head><body></body></html>" // Ingore token and state
+fn login_callback() -> Result<Response<'static>, Status> {
+    Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new("<!DOCTYPE html><html><head></head><body></body></html>"))
+        .ok()
 }
 
 #[post("/create", data = "<code>")]

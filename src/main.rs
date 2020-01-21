@@ -96,7 +96,7 @@ fn invalid_form() -> JsonValue {
 
 fn main() {
     rocket::ignite()
-        .mount("", routes![root, robots])
+        .mount("/", routes![root, robots])
         .mount("/api/youtube", routes![search])
         .mount("/api/spotify", routes![login_callback, create_token, refresh_token])
         .register(catchers![not_found, invalid_form])

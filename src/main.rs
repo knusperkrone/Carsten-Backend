@@ -23,6 +23,16 @@ use rocket::response::Response;
 use rocket::response::status::BadRequest;
 use rocket_contrib::json::JsonValue;
 
+#[get("/")]
+fn root()-> &'static str {
+    "<!DOCTYPE html><html><head></head><body></body></html>"
+}
+
+#[get("/robots.txt")]
+fn robots()-> &'static str {
+    ""
+}
+
 #[get("/callback")]
 fn login_callback() -> &'static str {
     "<!DOCTYPE html><html><head></head><body></body></html>" // Ingore token and state
@@ -86,6 +96,7 @@ fn invalid_form() -> JsonValue {
 
 fn main() {
     rocket::ignite()
+        .mount("", routes![root, robots])
         .mount("/api/youtube", routes![search])
         .mount("/api/spotify", routes![login_callback, create_token, refresh_token])
         .register(catchers![not_found, invalid_form])

@@ -24,4 +24,4 @@ keep_alive = 5
 log = "normal"
 secret_key = "aoQrXLvBiF2T467CV03YZrHGCfacLN8s0/1zoOGAAP8="
 limits = { forms = 32768 }
-# tls = { certs = "/path/to/certs.pem", key = "/path/to/key.pem" }
+tls = { certs = "/etc/letsencrypt/live/spotitube.if-lab.de/fullchain.pem", key = "/etc/letsencrypt/live/spotitube.if-lab.de/privkey.pem" }

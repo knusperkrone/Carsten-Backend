@@ -1,5 +1,6 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
+extern crate chrono;
 #[macro_use]
 extern crate rocket;
 #[macro_use]
@@ -23,9 +24,10 @@ use spotify::{CreateTokenRequest, RefreshTokenRequest};
 
 use std::error::Error;
 use std::io::Cursor;
+use chrono::Utc;
 
 use rocket::config::{Config, Environment, LoggingLevel};
-use rocket::http::ContentType;
+use rocket::http::{ContentType, Status};
 use rocket::request::Form;
 use rocket::response::status::BadRequest;
 use rocket::response::Response;
@@ -35,8 +37,13 @@ use rocket_slog::SlogFairing;
 use sloggers::{file::FileLoggerBuilder, Build};
 
 #[get("/")]
-fn root() -> &'static str {
-    "<!DOCTYPE html><html><head></head><body></body></html>"
+fn root() -> Result<Response<'static>, Status> {
+    Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(
+            "<!DOCTYPE html><html><head></head><body></body></html>",
+        ))
+        .ok()
 }
 
 #[get("/robots.txt")]
@@ -45,8 +52,13 @@ fn robots() -> &'static str {
 }
 
 #[get("/callback")]
-fn login_callback() -> &'static str {
-    "<!DOCTYPE html><html><head></head><body></body></html>" // Ingore token and state
+fn login_callback() -> Result<Response<'static>, Status> {
+    Response::build()
+        .header(ContentType::HTML)
+        .sized_body(Cursor::new(
+            "<!DOCTYPE html><html><head></head><body></body></html>",
+        ))
+        .ok()
 }
 
 #[post("/create", data = "<code>")]
@@ -108,8 +120,8 @@ fn invalid_form() -> JsonValue {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // Better weblogging
-    let web_file = "./private/log_web.txt";
+    // weblogging
+    let web_file = format!("./private/log_web_{}.txt", Utc::now().format("%d-%m-%Y_%H:%M"));
     let builder = FileLoggerBuilder::new(web_file);
     let weblogger = builder.build()?;
     let fairing = SlogFairing::new(weblogger);

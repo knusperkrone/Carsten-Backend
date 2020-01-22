@@ -9,7 +9,7 @@ pub struct Logging {
 }
 
 pub static APP_LOGGING: Lazy<Logging> = Lazy::new(|| {
-    let logfile = "./private/log_app.dart";
+    let logfile = "./private/log_app.txt";
     let file = OpenOptions::new()
         .create(true)
         .write(true)

@@ -5,6 +5,7 @@ authors = ["Aron Metzig <aron.metzig@interface-ag.de>"]
 edition = "2018"
 
 [dependencies]
+chrono = "0.4.10"
 rocket = { version = "0.4.2", features = ["tls"] }
 rocket_contrib = "0.4.2" 
 rocket-slog = "0.4.0"

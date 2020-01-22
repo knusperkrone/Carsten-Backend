@@ -5,31 +5,42 @@ extern crate rocket;
 #[macro_use]
 extern crate rocket_contrib;
 extern crate reqwest;
+extern crate rocket_slog;
 extern crate scraper;
 extern crate serde;
 extern crate serde_json;
+extern crate sloggers;
+#[macro_use]
+extern crate slog;
+extern crate once_cell;
 
 mod error;
+mod logging;
 mod spotify;
 mod youtube;
 
-use std::io::Cursor;
-
 use spotify::{CreateTokenRequest, RefreshTokenRequest};
 
-use rocket::request::Form;
+use std::error::Error;
+use std::io::Cursor;
+
+use rocket::config::{Config, Environment, LoggingLevel};
 use rocket::http::ContentType;
-use rocket::response::Response;
+use rocket::request::Form;
 use rocket::response::status::BadRequest;
+use rocket::response::Response;
 use rocket_contrib::json::JsonValue;
+use rocket_slog::SlogFairing;
+
+use sloggers::{file::FileLoggerBuilder, Build};
 
 #[get("/")]
-fn root()-> &'static str {
+fn root() -> &'static str {
     "<!DOCTYPE html><html><head></head><body></body></html>"
 }
 
 #[get("/robots.txt")]
-fn robots()-> &'static str {
+fn robots() -> &'static str {
     ""
 }
 
@@ -63,14 +74,16 @@ fn refresh_token(token: Form<RefreshTokenRequest>) -> Result<JsonValue, BadReque
 #[get("/search?<q>")]
 fn search(q: String) -> Result<Response<'static>, BadRequest<JsonValue>> {
     match youtube::search(q) {
-        Ok(resp) => { 
+        Ok(resp) => {
             let resp_json = serde_json::to_string(&resp).unwrap();
             Response::build()
-            .header(ContentType::JSON) 
-            .raw_header("Access-Control-Allow-Origin", "*")
-            .sized_body(Cursor::new(resp_json))
-            .ok()
-        },
+                .header(ContentType::JSON)
+                .header(ContentType::JSON)
+                .header(ContentType::JSON)
+                .raw_header("Access-Control-Allow-Origin", "*")
+                .sized_body(Cursor::new(resp_json))
+                .ok()
+        }
         Err(e_resp) => {
             println!("Invalid search: {}", e_resp);
             Err(BadRequest(Some(json!(e_resp))))
@@ -94,11 +107,25 @@ fn invalid_form() -> JsonValue {
     ))
 }
 
-fn main() {
-    rocket::ignite()
+fn main() -> Result<(), Box<dyn Error>> {
+    // Better weblogging
+    let web_file = "./private/log_web.txt";
+    let builder = FileLoggerBuilder::new(web_file);
+    let weblogger = builder.build()?;
+    let fairing = SlogFairing::new(weblogger);
+
+    let config = Config::build(Environment::Development)
+        .log_level(LoggingLevel::Off) // disables rocket logging
+        .finalize()?;
+    rocket::custom(config)
+        .attach(fairing)
         .mount("/", routes![root, robots])
         .mount("/api/youtube", routes![search])
-        .mount("/api/spotify", routes![login_callback, create_token, refresh_token])
+        .mount(
+            "/api/spotify",
+            routes![login_callback, create_token, refresh_token],
+        )
         .register(catchers![not_found, invalid_form])
         .launch();
+    Ok(())
 }

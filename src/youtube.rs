@@ -1,9 +1,11 @@
+use crate::error::ErrorResponse;
+use crate::logging::APP_LOGGING;
+
 use reqwest::header::{REFERER, USER_AGENT};
 use reqwest::Url;
-
-use crate::error::ErrorResponse;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
+
 
 static BASE_URL: &'static str = "https://music.youtube.com/";
 static CHROME_AGENT: &'static str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36";
@@ -99,6 +101,7 @@ fn scrape_context(html: String) -> Result<SearchContext, ErrorResponse> {
 
 // Returns video id
 pub fn search(q: String) -> Result<SearchResponse, ErrorResponse> {
+    info!(&APP_LOGGING.logger, "Searching track: {}", q);
     let client = reqwest::Client::new();
 
     let context_html = get_config_html(&client)?;

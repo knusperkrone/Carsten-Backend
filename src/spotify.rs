@@ -1,10 +1,11 @@
 use crate::error::ErrorResponse;
+use crate::logging::APP_LOGGING;
 
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 static TOKEN_URL: &'static str = "https://accounts.spotify.com/api/token";
-static REDIRECT_URL: &'static str = "http://spotitube.if-lab.de/api/spotify/callback";
+static REDIRECT_URL: &'static str = "https://spotitube.if-lab.de/api/spotify/callback";
 static PRIVATE_TOKEN: &'static str =
     "MmIyMTdhMzI4NTc2NDViNzllNjBkZGEwYTU2YjIyNjg6N2E4NTQ5NDMxZTljNGU0Yzk0ODAyYThmYmE2ZjVlOGQ";
 
@@ -76,6 +77,7 @@ fn handle_response<T: for<'de> Deserialize<'de>>(
 }
 
 pub fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, ErrorResponse> {
+    info!(&APP_LOGGING.logger, "Create token: {}", req.auth_code);
     let body = format!(
         "grant_type=authorization_code&code={}&redirect_uri={}",
         req.auth_code, REDIRECT_URL
@@ -93,6 +95,7 @@ pub fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, Erro
 }
 
 pub fn refresh_token(req: RefreshTokenRequest) -> Result<RefreshTokenResponse, ErrorResponse> {
+    info!(&APP_LOGGING.logger, "Refresh token: {}", req.refresh_token);
     let body = format!("grant_type=refresh_token&refresh_token={}", req.refresh_token);
 
     let client = Client::new();

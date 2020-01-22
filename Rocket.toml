@@ -25,6 +25,6 @@ log = "critical"
 secret_key = "aoQrXLvBiF2T467CV03YZrHGCfacLN8s0/1zoOGAAP8="
 limits = { forms = 32768 }
 
-[global.tls]
+[production.tls]
 certs = "private/ca_cert.pem"
 key = "private/ca_key.pem"

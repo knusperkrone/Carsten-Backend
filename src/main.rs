@@ -22,11 +22,11 @@ mod youtube;
 
 use spotify::{CreateTokenRequest, RefreshTokenRequest};
 
+use chrono::Utc;
 use std::error::Error;
 use std::io::Cursor;
-use chrono::Utc;
 
-use rocket::config::{Config, Environment, LoggingLevel};
+use rocket::config::{LoggingLevel, RocketConfig};
 use rocket::http::{ContentType, Status};
 use rocket::request::Form;
 use rocket::response::status::BadRequest;
@@ -34,7 +34,12 @@ use rocket::response::Response;
 use rocket_contrib::json::JsonValue;
 use rocket_slog::SlogFairing;
 
-use sloggers::{file::FileLoggerBuilder, Build};
+use sloggers::{
+    file::FileLoggerBuilder,
+    terminal::{Destination, TerminalLoggerBuilder},
+    types::Severity,
+    Build,
+};
 
 #[get("/")]
 fn root() -> Result<Response<'static>, Status> {
@@ -120,16 +125,28 @@ fn invalid_form() -> JsonValue {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    // weblogging
-    let web_file = format!("./private/log_web_{}.txt", Utc::now().format("%d-%m-%Y_%H:%M"));
-    let builder = FileLoggerBuilder::new(web_file);
-    let weblogger = builder.build()?;
-    let fairing = SlogFairing::new(weblogger);
+    let fairing: SlogFairing;
+    if cfg!(debug_assertions) {
+        // Terminal logging
+        let mut builder = TerminalLoggerBuilder::new();
+        builder.level(Severity::Debug);
+        builder.destination(Destination::Stderr);
+        let logger = builder.build()?;
+        fairing = SlogFairing::new(logger);
+    } else {
+        // File logging
+        let web_file = format!(
+            "./private/log_web_{}.txt",
+            Utc::now().format("%d-%m-%Y_%H:%M")
+        );
+        let builder = FileLoggerBuilder::new(web_file);
+        let weblogger = builder.build()?;
+        fairing = SlogFairing::new(weblogger);
+    }
 
-    let config = Config::build(Environment::Development)
-        .log_level(LoggingLevel::Off) // disables rocket logging
-        .finalize()?;
-    rocket::custom(config)
+    let mut config = RocketConfig::read().unwrap().active().clone();
+    config.set_log_level(LoggingLevel::Off);
+    rocket::custom(config.clone())
         .attach(fairing)
         .mount("/", routes![root, robots])
         .mount("/api/youtube", routes![search])

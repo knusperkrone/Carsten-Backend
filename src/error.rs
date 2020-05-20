@@ -1,7 +1,7 @@
-use serde::Serialize;
+use serde::{Serialize, Deserialize};
 use std::convert::From;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     status: String,
     reason: String,
@@ -24,13 +24,7 @@ impl From<reqwest::Error> for ErrorResponse {
     fn from(e: reqwest::Error) -> Self {
         ErrorResponse::from_reqwest(e)
     }
-}
-
-impl From<reqwest::UrlError> for ErrorResponse {
-    fn from(e: reqwest::UrlError) -> Self {
-        ErrorResponse::new(String::from("Url error"), e.to_string())
-    }
-}
+} 
 
 impl From<serde_json::Error> for ErrorResponse {
     fn from(e: serde_json::Error) -> Self {

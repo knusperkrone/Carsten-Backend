@@ -9,12 +9,12 @@ static REDIRECT_URL: &'static str = "https://spotitube.if-lab.de/api/spotify/cal
 static PRIVATE_TOKEN: &'static str =
     "MmIyMTdhMzI4NTc2NDViNzllNjBkZGEwYTU2YjIyNjg6N2E4NTQ5NDMxZTljNGU0Yzk0ODAyYThmYmE2ZjVlOGQ";
 
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct CreateTokenRequest {
     auth_code: String,
 }
 
-#[derive(FromForm)]
+#[derive(Deserialize)]
 pub struct RefreshTokenRequest {
     refresh_token: String,
 }
@@ -40,32 +40,16 @@ struct SpotifyError {
     error_description: String,
 }
 
-impl SpotifyError {
-    fn to_error_response(self) -> ErrorResponse {
-        ErrorResponse::new(self.error, self.error_description)
-    }
-}
-
-impl std::fmt::Display for SpotifyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{{ \"error\": \"{}\",\"error_description\": \"{}\" }}",
-            self.error, self.error_description
-        )
-    }
-}
-
-fn handle_response<T: for<'de> Deserialize<'de>>(
+async fn handle_response<T: for<'de> Deserialize<'de>>(
     res: reqwest::Result<reqwest::Response>,
 ) -> Result<T, ErrorResponse> {
     match res {
-        Ok(mut resp) => {
+        Ok(resp) => {
             if !resp.status().is_success() {
-                let e_resp = resp.json::<SpotifyError>()?;
-                Err(e_resp.to_error_response())
+                let resp = resp.json::<ErrorResponse>().await?;
+                Err(resp)
             } else {
-                let parsed = resp.json::<T>();
+                let parsed = resp.json::<T>().await;
                 match parsed {
                     Ok(token) => Ok(token),
                     Err(e) => Err(ErrorResponse::from_reqwest(e)),
@@ -76,8 +60,8 @@ fn handle_response<T: for<'de> Deserialize<'de>>(
     }
 }
 
-pub fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, ErrorResponse> {
-    info!(&APP_LOGGING.logger, "Create token: {}", req.auth_code);
+pub async fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, ErrorResponse> {
+    info!(&APP_LOGGING, "Create token: {}", req.auth_code);
     let body = format!(
         "grant_type=authorization_code&code={}&redirect_uri={}",
         req.auth_code, REDIRECT_URL
@@ -89,14 +73,20 @@ pub fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, Erro
         .body(body)
         .header("Content-Type", "application/x-www-form-urlencoded")
         .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
-        .send();
+        .send()
+        .await;
 
-    handle_response(res)
+    handle_response(res).await
 }
 
-pub fn refresh_token(req: RefreshTokenRequest) -> Result<RefreshTokenResponse, ErrorResponse> {
-    info!(&APP_LOGGING.logger, "Refresh token: {}", req.refresh_token);
-    let body = format!("grant_type=refresh_token&refresh_token={}", req.refresh_token);
+pub async fn refresh_token(
+    req: RefreshTokenRequest,
+) -> Result<RefreshTokenResponse, ErrorResponse> {
+    info!(&APP_LOGGING, "Refresh token: {}", req.refresh_token);
+    let body = format!(
+        "grant_type=refresh_token&refresh_token={}",
+        req.refresh_token
+    );
 
     let client = Client::new();
     let res = client
@@ -104,7 +94,8 @@ pub fn refresh_token(req: RefreshTokenRequest) -> Result<RefreshTokenResponse, E
         .body(body)
         .header("Content-Type", "application/x-www-form-urlencoded")
         .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
-        .send();
+        .send()
+        .await;
 
-    handle_response(res)
+    handle_response(res).await
 }

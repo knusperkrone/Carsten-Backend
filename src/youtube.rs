@@ -2,10 +2,8 @@ use crate::error::ErrorResponse;
 use crate::logging::APP_LOGGING;
 
 use reqwest::header::{REFERER, USER_AGENT};
-use reqwest::Url;
-use scraper::{Html, Selector};
+use scraper::{Html, Selector}; 
 use serde::{Deserialize, Serialize};
-
 
 static BASE_URL: &'static str = "https://music.youtube.com/";
 static CHROME_AGENT: &'static str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36";
@@ -26,15 +24,17 @@ struct SearchContext {
     client_version: String,
 }
 
-fn get_config_html(client: &reqwest::Client) -> Result<String, ErrorResponse> {
+async fn get_config_html(client: &reqwest::Client) -> Result<String, ErrorResponse> {
     Ok(client
         .get(BASE_URL)
         .header(USER_AGENT, CHROME_AGENT)
-        .send()?
-        .text()?)
+        .send()
+        .await?
+        .text()
+        .await?)
 }
 
-fn post_search(
+async fn post_search(
     client: &reqwest::Client,
     context: SearchContext,
     q: String,
@@ -43,8 +43,9 @@ fn post_search(
         "{}/youtubei/v1/search?alt=json&key={}",
         BASE_URL, context.key
     );
-    let url = Url::parse(formated)?;
-    let body = json!({
+
+    let url = reqwest::Url::parse(formated).unwrap();
+    let body = serde_json::json!({
         "query": q,
         "context": {
             "client": {
@@ -59,8 +60,10 @@ fn post_search(
         .header(USER_AGENT, CHROME_AGENT)
         .header(REFERER, MUSIC_REFERER)
         .body(body.to_string())
-        .send()?
-        .text()?)
+        .send()
+        .await?
+        .text()
+        .await?)
 }
 
 fn scrape_search_json(json: String) -> Result<String, ErrorResponse> {
@@ -100,13 +103,13 @@ fn scrape_context(html: String) -> Result<SearchContext, ErrorResponse> {
 }
 
 // Returns video id
-pub fn search(q: String) -> Result<SearchResponse, ErrorResponse> {
-    info!(&APP_LOGGING.logger, "Searching track: {}", q);
+pub async fn search(q: String) -> Result<SearchResponse, ErrorResponse> {
+    info!(&APP_LOGGING, "Searching track: {}", q);
     let client = reqwest::Client::new();
 
-    let context_html = get_config_html(&client)?;
+    let context_html = get_config_html(&client).await?;
     let context = scrape_context(context_html)?;
-    let search_json = post_search(&client, context, q)?;
+    let search_json = post_search(&client, context, q).await?;
     let id = scrape_search_json(search_json)?;
 
     Ok(SearchResponse { id: id })

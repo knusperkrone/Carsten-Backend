@@ -7,9 +7,10 @@ mod spotify;
 mod youtube;
 
 use actix_web::{middleware, web, App, HttpResponse, HttpServer};
-use spotify::{CreateTokenRequest, RefreshTokenRequest};
+use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 use crate::logging::APP_LOGGING;
+use crate::spotify::{CreateTokenRequest, RefreshTokenRequest};
 
 async fn root() -> HttpResponse {
     HttpResponse::Ok()
@@ -68,6 +69,12 @@ async fn youtube_search(web::Query(params): web::Query<SearchParams>) -> HttpRes
 async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
+
+    let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+    builder
+        .set_private_key_file("key.pem", SslFiletype::PEM)
+        .unwrap();
+    builder.set_certificate_chain_file("cert.pem").unwrap();
     HttpServer::new(move || {
         App::new()
             .data(web::JsonConfig::default().limit(4096))
@@ -85,7 +92,7 @@ async fn main() -> std::io::Result<()> {
             )
             .service(web::resource("/api/youtube/search").route(web::get().to(youtube_search)))
     })
-    .bind("0.0.0.0:8080")
+    .bind_openssl("127.0.0.1:8443", builder)
     .unwrap()
     .run()
     .await

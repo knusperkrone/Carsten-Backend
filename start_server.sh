@@ -5,4 +5,4 @@ if [ "$(id -u)" == "0" ]; then
 fi
 
 sudo pkill -f chromi_tube_backend
-sudo ROCKET_ENV=production $(which cargo) run --release
+sudo $(which cargo) run --release 0.0.0.0:443

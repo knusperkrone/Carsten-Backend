@@ -11,6 +11,8 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 use crate::logging::APP_LOGGING;
 use crate::spotify::{CreateTokenRequest, RefreshTokenRequest};
+use actix_cors::Cors;
+use actix_web::http::header;
 
 async fn root() -> HttpResponse {
     HttpResponse::Ok()
@@ -67,6 +69,15 @@ async fn youtube_search(web::Query(params): web::Query<SearchParams>) -> HttpRes
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
+    let args: Vec<String> = std::env::args().collect();
+    let bind_addr: &str;
+    if let Some(addr) = args.get(1) {
+        bind_addr = addr;
+    } else {
+        bind_addr = "0.0.0.0:8443";
+    }
+    info!(APP_LOGGING, "Binding to address: {}", bind_addr);
+
     std::env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
 
@@ -79,6 +90,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(web::JsonConfig::default().limit(4096))
             .wrap(middleware::Logger::default())
+            .wrap(Cors::default())
             .service(web::resource("/").route(web::get().to(root)))
             .service(web::resource("/robots.txt").route(web::get().to(robots)))
             .service(
@@ -92,7 +104,7 @@ async fn main() -> std::io::Result<()> {
             )
             .service(web::resource("/api/youtube/search").route(web::get().to(youtube_search)))
     })
-    .bind_openssl("127.0.0.1:8443", builder)
+    .bind_openssl(bind_addr, builder)
     .unwrap()
     .run()
     .await

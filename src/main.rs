@@ -12,7 +12,6 @@ use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 use crate::logging::APP_LOGGING;
 use crate::spotify::{CreateTokenRequest, RefreshTokenRequest};
 use actix_cors::Cors;
-use actix_web::http::header;
 
 async fn root() -> HttpResponse {
     HttpResponse::Ok()

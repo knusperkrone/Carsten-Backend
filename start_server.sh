@@ -4,8 +4,10 @@ if [ "$(id -u)" == "0" ]; then
    exit 1
 fi
 
-sudo cp /etc/letsencrypt/live/spotitube.if-lab.de/fullchain.pem chain.pem
-sudo cp /etc/letsencrypt/live/spotitube.if-lab.de/privkey.pem key.pem
+sudo rm cert.pem
+sudo rm key.pem
+sudo ln -s /etc/letsencrypt/live/spotitube.if-lab.de/fullchain.pem cert.pem
+sudo ln -s /etc/letsencrypt/live/spotitube.if-lab.de/privkey.pem key.pem
 
 sudo pkill -f chromi_tube_backend
 sudo $(which cargo) run --release 0.0.0.0:443

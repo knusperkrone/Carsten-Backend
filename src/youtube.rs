@@ -2,7 +2,7 @@ use crate::error::ErrorResponse;
 use crate::logging::APP_LOGGING;
 
 use reqwest::header::{REFERER, USER_AGENT};
-use scraper::{Html, Selector}; 
+use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 
 static BASE_URL: &'static str = "https://music.youtube.com/";
@@ -46,6 +46,7 @@ async fn post_search(
 
     let url = reqwest::Url::parse(formated).unwrap();
     let body = serde_json::json!({
+        "params": "Eg-KAQwIABABGAAgACgAMABqChAKEAQQAxAFEAk%3D", // prefer video
         "query": q,
         "context": {
             "client": {

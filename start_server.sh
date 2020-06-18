@@ -10,4 +10,6 @@ sudo ln -s /etc/letsencrypt/live/spotitube.if-lab.de/fullchain.pem cert.pem
 sudo ln -s /etc/letsencrypt/live/spotitube.if-lab.de/privkey.pem key.pem
 
 sudo pkill -f chromi_tube_backend
-sudo $(which cargo) run --release 0.0.0.0:443
+while true; do
+   sudo $(which cargo) run --release 0.0.0.0:443
+done

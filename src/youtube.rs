@@ -115,3 +115,15 @@ pub async fn search(q: String) -> Result<SearchResponse, ErrorResponse> {
 
     Ok(SearchResponse { id: id })
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[actix_rt::test]
+    async fn test_search() {
+        let actual = search("feel good inc - gorillaz".to_owned()).await;
+        assert!(actual.is_ok());
+        assert_eq!("HyHNuVaZJ-k", actual.unwrap().id);
+    }
+}

@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use std::convert::From;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ErrorResponse {
     status: String,
     reason: String,

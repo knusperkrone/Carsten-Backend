@@ -17,14 +17,14 @@ RUN rm src/*.rs
 COPY ./src ./src
 
 # build for release
-RUN rm ./target/release/deps/iftem_backend*
+RUN rm ./target/release/deps/chromitube_backend*
 RUN cargo build --release
 
 # our final base
 FROM rust:1.43
 
 # copy the build artifact from the build stage
-COPY --from=build /iftem_backend/target/release/iftem_backend .
+COPY --from=build /iftem_backend/target/release/chromitube_backend .
 
 # set the startup command to run your binary
-CMD ["./iftem_backend"]
+CMD ["./chromitube_backend"]

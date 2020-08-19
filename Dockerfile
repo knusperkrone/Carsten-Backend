@@ -15,6 +15,7 @@ RUN rm src/*.rs
 
 # copy your source tree
 COPY ./src ./src
+COPY ./certs ./certs
 
 # build for release
 RUN rm ./target/release/deps/chromi_tube_backend*
@@ -25,6 +26,7 @@ FROM alpine:latest
 
 # copy the build artifact from the build stage
 COPY --from=build /chromi_tube_backend/target/release/chromi_tube_backend .
+COPY --from=build /chromi_tube_backend/certs .
 
 # set the startup command to run your binary
 CMD ["./chromi_tube_backend"]

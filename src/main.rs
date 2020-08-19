@@ -81,10 +81,10 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
+    builder.set_certificate_chain_file("./certs/fullchain.pem").unwrap();
     builder
-        .set_private_key_file("key.pem", SslFiletype::PEM)
+        .set_private_key_file("./certs/key.pem", SslFiletype::PEM)
         .unwrap();
-    builder.set_certificate_chain_file("cert.pem").unwrap();
     HttpServer::new(move || {
         App::new()
             .data(web::JsonConfig::default().limit(4096))

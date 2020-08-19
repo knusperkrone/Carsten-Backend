@@ -1,12 +1,12 @@
 version: "2"
 services:
-  backend:
+  frontend:
     restart: always
     image: docker-registry.if-lab.de/arme/spotitube-backend
-    volumes:
-      - ./data/certbot/conf/fullchain.pem:private/cert.pem
-      - ./data/certbot/conf/privkey.pem:pivate/key.pem
-      - ./data/certbot/www:/var/www/certbot
+    #    volumes:
+    #  - ./data/certbot/conf/fullchain.pem:/chromi_tube_backend/cert.pem
+    #  - ./data/certbot/conf/privkey.pem:/chromi_tube_backend/key.pem
+    #  - ./data/certbot/www:/var/www/certbot
     ports:
       - 443:8443
 

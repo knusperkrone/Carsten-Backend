@@ -1,0 +1,8 @@
+version: "2"
+services:
+  frontend:
+    restart: always
+    image: docker-registry.if-lab.de/arme/spotitube-backend
+    ports:
+      - 443:8443
+

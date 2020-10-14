@@ -32,6 +32,4 @@ build-application:
 
 deploy-integration:
   extends: .deploy-integration
-  dependencies:
-    - build-application
   stage: #####

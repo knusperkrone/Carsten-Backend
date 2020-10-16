@@ -24,6 +24,7 @@ build-branch-application:
   extends: .build-branch-application
   variables:
     DOCKERFILE_PATH: "Dockerfile"
+    
 build-application:
   # Erbt von .build-application, definiert in IF/pipeline-templates:job-templates/build-docker.yml
   extends: .build-application
@@ -32,4 +33,5 @@ build-application:
 
 deploy-integration:
   extends: .deploy-integration
-  stage: #####
+  dependencies:
+    - build-application

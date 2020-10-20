@@ -1,6 +1,7 @@
 version: "3"
 services:
-  backend: docker-registry.if-lab.de/arme/spotitube-backend
+  backend: 
+    image: docker-registry.if-lab.de/arme/spotitube-backend:lastest
     networks:
       - proxy
     deploy:

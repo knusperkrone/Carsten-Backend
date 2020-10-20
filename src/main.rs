@@ -80,11 +80,14 @@ async fn main() -> std::io::Result<()> {
     std::env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
 
+    /*
     let mut builder = SslAcceptor::mozilla_intermediate(SslMethod::tls()).unwrap();
     builder.set_certificate_chain_file("./certs/fullchain.pem").unwrap();
     builder
         .set_private_key_file("./certs/privkey.pem", SslFiletype::PEM)
         .unwrap();
+    */
+    
     HttpServer::new(move || {
         App::new()
             .data(web::JsonConfig::default().limit(4096))
@@ -103,7 +106,7 @@ async fn main() -> std::io::Result<()> {
             )
             .service(web::resource("/api/youtube/search").route(web::get().to(youtube_search)))
     })
-    .bind_openssl(bind_addr, builder)
+    .bind(bind_addr)
     .unwrap()
     .run()
     .await

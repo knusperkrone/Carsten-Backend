@@ -43,7 +43,6 @@ async fn handle_response<T: for<'de> Deserialize<'de>>(
 ) -> Result<T, ErrorResponse> {
     match res {
         Ok(resp) => {
-            //info!(APP_LOGGING, "{}", resp);
             if !resp.status().is_success() {
                 let resp = resp.json::<SpotifyError>().await?;
                 Err(ErrorResponse::new(resp.error, resp.error_description))
@@ -60,19 +59,20 @@ async fn handle_response<T: for<'de> Deserialize<'de>>(
 }
 
 pub async fn create_token(req: CreateTokenRequest) -> Result<String, ErrorResponse> {
-    let token_url = "https://accounts.spotify.com/api/token";
-    let redirect_url = "https://integration.if-lab.de/arme-spotitube-backend/api/spotify/callback";
+    info!(&APP_LOGGING, "Create token: {}", req.auth_code);
 
     let client = Client::new();
+    let create_token_url = "https://accounts.spotify.com/api/token";
+    let redirect_url = "https://integration.if-lab.de/arme-spotitube-backend/api/spotify/callback";
+
     let res = client
-        .post(token_url)
+        .post(create_token_url)
         .form(&[
             ("grant_type", "authorization_code"),
             ("code", &req.auth_code),
             ("redirect_uri", redirect_url),
         ])
         .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
-        .header("user-agent", "curl/7.69.1")
         .send()
         .await;
 
@@ -83,17 +83,16 @@ pub async fn refresh_token(
     req: RefreshTokenRequest,
 ) -> Result<RefreshTokenResponse, ErrorResponse> {
     info!(&APP_LOGGING, "Refresh token: {}", req.refresh_token);
-    let body = format!(
-        "grant_type=refresh_token&refresh_token={}",
-        req.refresh_token
-    );
-
-    let token_url = "https://accounts.spotify.com/api/token";
+    
     let client = Client::new();
+    let refresh_token_url = "https://accounts.spotify.com/api/token";
+
     let res = client
-        .post(token_url)
-        .body(body)
-        .header("Content-Type", "application/x-www-form-urlencoded")
+        .post(refresh_token_url)
+        .form(&[
+            ("grant_type", "refresh_token"),
+            ("refresh_token", &req.refresh_token),
+        ])
         .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
         .send()
         .await;

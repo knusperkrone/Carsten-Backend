@@ -15,7 +15,7 @@ use actix_cors::Cors;
 async fn root() -> HttpResponse {
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
-        .body("<!DOCTYPE html><html><head></head><body></body></html>")
+        .body("<!DOCTYPE html><html><head></head><body><h1>Carsten works</h1></body></html>")
 }
 
 async fn robots() -> HttpResponse {
@@ -34,7 +34,7 @@ async fn spotify_create_token(code: web::Form<CreateTokenRequest>) -> HttpRespon
     match spotify::create_token(code.into_inner()).await {
         Ok(resp) => HttpResponse::Ok().json(resp),
         Err(resp) => {
-            println!("Invalid token creation: {}", resp);
+            warn!(APP_LOGGING, "Invalid token creation: {}", resp);
             HttpResponse::BadRequest().json(resp)
         }
     }

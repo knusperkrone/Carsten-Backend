@@ -22,7 +22,7 @@ RUN rm ./target/release/deps/chromi_tube_backend*
 RUN cargo build --release
 
 # our final base
-FROM rust:1.43
+FROM rust:1.47
 
 # copy the build artifact from the build stage
 COPY --from=build /chromi_tube_backend/target/release/chromi_tube_backend .

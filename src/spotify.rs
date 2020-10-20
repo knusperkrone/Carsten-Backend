@@ -4,8 +4,6 @@ use crate::logging::APP_LOGGING;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-static TOKEN_URL: &'static str = "https://accounts.spotify.com/api/token";
-static REDIRECT_URL: &'static str = "https://spotitube.if-lab.de/api/spotify/callback";
 static PRIVATE_TOKEN: &'static str =
     "MmIyMTdhMzI4NTc2NDViNzllNjBkZGEwYTU2YjIyNjg6N2E4NTQ5NDMxZTljNGU0Yzk0ODAyYThmYmE2ZjVlOGQ";
 
@@ -45,9 +43,10 @@ async fn handle_response<T: for<'de> Deserialize<'de>>(
 ) -> Result<T, ErrorResponse> {
     match res {
         Ok(resp) => {
+            //info!(APP_LOGGING, "{}", resp);
             if !resp.status().is_success() {
-                let resp = resp.json::<ErrorResponse>().await?;
-                Err(resp)
+                let resp = resp.json::<SpotifyError>().await?;
+                Err(ErrorResponse::new(resp.error, resp.error_description))
             } else {
                 let parsed = resp.json::<T>().await;
                 match parsed {
@@ -60,19 +59,25 @@ async fn handle_response<T: for<'de> Deserialize<'de>>(
     }
 }
 
-pub async fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, ErrorResponse> {
-    info!(&APP_LOGGING, "Create token: {}", req.auth_code);
-    let body = format!(
-        "grant_type=authorization_code&code={}&redirect_uri={}",
-        req.auth_code, REDIRECT_URL
-    );
+pub async fn create_token(req: CreateTokenRequest) -> Result<String, ErrorResponse> {
+    let token_url = "https://accounts.spotify.com/api/token";
+    let redirect_url = "https://integration.if-lab.de/arme-spotitube-backend/api/spotify/callback";
 
-    let client = Client::new();
+    let proxy = reqwest::Proxy::https("http://127.0.0.1:8080").unwrap();
+    let client = Client::builder()
+        .proxy(proxy)
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap();
     let res = client
-        .post(TOKEN_URL)
-        .body(body)
-        .header("Content-Type", "application/x-www-form-urlencoded")
+        .post(token_url)
+        .form(&[
+            ("grant_type", "authorization_code"),
+            ("code", &req.auth_code),
+            ("redirect_uri", redirect_url),
+        ])
         .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
+        .header("user-agent", "curl/7.69.1")
         .send()
         .await;
 
@@ -88,9 +93,10 @@ pub async fn refresh_token(
         req.refresh_token
     );
 
+    let token_url = "https://accounts.spotify.com/api/token";
     let client = Client::new();
     let res = client
-        .post(TOKEN_URL)
+        .post(token_url)
         .body(body)
         .header("Content-Type", "application/x-www-form-urlencoded")
         .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))

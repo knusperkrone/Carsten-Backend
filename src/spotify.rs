@@ -60,11 +60,12 @@ async fn handle_response<T: for<'de> Deserialize<'de>>(
 }
 
 pub async fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, ErrorResponse> {
-    let token_url = "https://accounts.spotify.com/api/token";
-    let redirect_url = "https://integration.if-lab.de/arme-spotitube-backend/api/spotify/callback";
+    info!(&APP_LOGGING, "Create token: {}", req.auth_code);
 
-    
+    let token_url = "https://accounts.spotify.com/api/token";
+    let redirect_url = "https://integration.if-lab.de/arme-spotitube-backend/api/spotify/callback"
     let client = Client::new();
+
     let res = client
         .post(token_url)
         .form(&[

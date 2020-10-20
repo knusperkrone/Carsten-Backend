@@ -43,6 +43,7 @@ async fn handle_response<T: for<'de> Deserialize<'de>>(
 ) -> Result<T, ErrorResponse> {
     match res {
         Ok(resp) => {
+            //info!(APP_LOGGING, "{}", resp);
             if !resp.status().is_success() {
                 let resp = resp.json::<SpotifyError>().await?;
                 Err(ErrorResponse::new(resp.error, resp.error_description))
@@ -58,15 +59,18 @@ async fn handle_response<T: for<'de> Deserialize<'de>>(
     }
 }
 
-pub async fn create_token(req: CreateTokenRequest) -> Result<String, ErrorResponse> {
-    info!(&APP_LOGGING, "Create token: {}", req.auth_code);
-
-    let client = Client::new();
-    let create_token_url = "https://accounts.spotify.com/api/token";
+pub async fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, ErrorResponse> {
+    let token_url = "https://accounts.spotify.com/api/token";
     let redirect_url = "https://integration.if-lab.de/arme-spotitube-backend/api/spotify/callback";
 
+    let proxy = reqwest::Proxy::https("http://127.0.0.1:8080").unwrap();
+    let client = Client::builder()
+        .proxy(proxy)
+        .danger_accept_invalid_certs(true)
+        .build()
+        .unwrap();
     let res = client
-        .post(create_token_url)
+        .post(token_url)
         .form(&[
             ("grant_type", "authorization_code"),
             ("code", &req.auth_code),

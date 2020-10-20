@@ -63,12 +63,8 @@ pub async fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse
     let token_url = "https://accounts.spotify.com/api/token";
     let redirect_url = "https://integration.if-lab.de/arme-spotitube-backend/api/spotify/callback";
 
-    let proxy = reqwest::Proxy::https("http://127.0.0.1:8080").unwrap();
-    let client = Client::builder()
-        .proxy(proxy)
-        .danger_accept_invalid_certs(true)
-        .build()
-        .unwrap();
+    
+    let client = Client::new();
     let res = client
         .post(token_url)
         .form(&[

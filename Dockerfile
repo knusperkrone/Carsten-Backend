@@ -1,5 +1,5 @@
 # select build image
-FROM rust:1.47 as build
+FROM rust:1.49 as build
 
 # create a new empty shell project
 RUN USER=root cargo new --bin chromi_tube_backend
@@ -22,7 +22,7 @@ RUN rm ./target/release/deps/chromi_tube_backend*
 RUN cargo build --release
 
 # our final base
-FROM rust:1.47
+FROM rust:1.49
 
 # copy the build artifact from the build stage
 COPY --from=build /chromi_tube_backend/target/release/chromi_tube_backend .

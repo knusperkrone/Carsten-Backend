@@ -65,7 +65,7 @@ async fn youtube_search(web::Query(params): web::Query<SearchParams>) -> HttpRes
     }
 }
 
-#[actix_rt::main]
+#[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let args: Vec<String> = std::env::args().collect();
     let bind_addr: &str;

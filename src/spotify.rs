@@ -1,7 +1,7 @@
 use crate::error::ErrorResponse;
 use crate::logging::APP_LOGGING;
 
-use reqwest::Client;
+use actix_web::client::Client;
 use serde::{Deserialize, Serialize};
 
 static PRIVATE_TOKEN: &'static str =
@@ -38,27 +38,6 @@ struct SpotifyError {
     error_description: String,
 }
 
-async fn handle_response<T: for<'de> Deserialize<'de>>(
-    res: reqwest::Result<reqwest::Response>,
-) -> Result<T, ErrorResponse> {
-    match res {
-        Ok(resp) => {
-            //info!(APP_LOGGING, "{}", resp);
-            if !resp.status().is_success() {
-                let resp = resp.json::<SpotifyError>().await?;
-                Err(ErrorResponse::new(resp.error, resp.error_description))
-            } else {
-                let parsed = resp.json::<T>().await;
-                match parsed {
-                    Ok(token) => Ok(token),
-                    Err(e) => Err(ErrorResponse::from_reqwest(e)),
-                }
-            }
-        }
-        Err(e) => Err(ErrorResponse::from_reqwest(e)),
-    }
-}
-
 pub async fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse, ErrorResponse> {
     info!(&APP_LOGGING, "Create token: {}", req.auth_code);
 
@@ -66,37 +45,33 @@ pub async fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse
     let redirect_url = "https://integration.if-lab.de/arme-spotitube-backend/api/spotify/callback";
     let client = Client::new();
 
-    let res = client
+    let mut res = client
         .post(token_url)
-        .form(&[
+        .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
+        .send_form(&[
             ("grant_type", "authorization_code"),
             ("code", &req.auth_code),
             ("redirect_uri", redirect_url),
         ])
-        .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
-        .send()
-        .await;
-
-    handle_response(res).await
+        .await?;
+    Ok(res.json::<CreateTokenResponse>().await?)
 }
 
 pub async fn refresh_token(
     req: RefreshTokenRequest,
 ) -> Result<RefreshTokenResponse, ErrorResponse> {
     info!(&APP_LOGGING, "Refresh token: {}", req.refresh_token);
-    
+
     let client = Client::new();
     let refresh_token_url = "https://accounts.spotify.com/api/token";
 
-    let res = client
+    let mut res = client
         .post(refresh_token_url)
-        .form(&[
+        .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
+        .send_form(&[
             ("grant_type", "refresh_token"),
             ("refresh_token", &req.refresh_token),
         ])
-        .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
-        .send()
-        .await;
-
-    handle_response(res).await
+        .await?;
+    Ok(res.json::<RefreshTokenResponse>().await?)
 }

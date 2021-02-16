@@ -1,9 +1,12 @@
 use crate::error::ErrorResponse;
 use crate::logging::APP_LOGGING;
 
-use reqwest::header::{REFERER, USER_AGENT};
+use actix_web::client::Client;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
+
+static USER_AGENT: &'static str = "User-Agent";
+static REFERER: &'static str = "Referer";
 
 static BASE_URL: &'static str = "https://music.youtube.com/";
 static CHROME_AGENT: &'static str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36";
@@ -24,27 +27,27 @@ struct SearchContext {
     client_version: String,
 }
 
-async fn get_config_html(client: &reqwest::Client) -> Result<String, ErrorResponse> {
-    Ok(client
+async fn get_config_html(client: &Client) -> Result<String, ErrorResponse> {
+    let body = client
         .get(BASE_URL)
         .header(USER_AGENT, CHROME_AGENT)
         .send()
         .await?
-        .text()
-        .await?)
+        .body()
+        .await?;
+    Ok(std::str::from_utf8(&body).unwrap().to_owned())
 }
 
 async fn post_search(
-    client: &reqwest::Client,
+    client: &Client,
     context: SearchContext,
     q: String,
 ) -> Result<String, ErrorResponse> {
-    let formated = &format!(
+    let url = &format!(
         "{}/youtubei/v1/search?alt=json&key={}",
         BASE_URL, context.key
     );
 
-    let url = reqwest::Url::parse(formated).unwrap();
     let body = serde_json::json!({
         "params": "Eg-KAQwIABABGAAgACgAMABqChAKEAQQAxAFEAk%3D", // prefer video
         "query": q,
@@ -56,15 +59,16 @@ async fn post_search(
         },
     });
 
-    Ok(client
+    let resp_body = client
         .post(url)
         .header(USER_AGENT, CHROME_AGENT)
         .header(REFERER, MUSIC_REFERER)
-        .body(body.to_string())
-        .send()
+        .send_body(body.to_string())
         .await?
-        .text()
-        .await?)
+        .body()
+        .limit(1024 * 1024)
+        .await?;
+    Ok(std::str::from_utf8(&resp_body).unwrap().to_owned())
 }
 
 fn scrape_search_json(json: String) -> Result<String, ErrorResponse> {
@@ -90,11 +94,12 @@ fn scrape_context(html: String) -> Result<SearchContext, ErrorResponse> {
     let doc = Html::parse_document(&html);
     let scripts = doc.select(&script_sel);
     for script in scripts {
-        let text = script.text().next().unwrap();
-        if let Some(index) = text.find(&needle) {
-            let sliced = text.get(index + needle.len()..text.len() - 2).unwrap_or("");
-            let ctx: SearchContext = serde_json::from_str(sliced)?;
-            return Ok(ctx);
+        for text in script.text() {
+            if let Some(index) = text.find(&needle) {
+                let sliced = text.get(index + needle.len()..text.len() - 2).unwrap_or("");
+                let ctx: SearchContext = serde_json::from_str(sliced)?;
+                return Ok(ctx);
+            }
         }
     }
     Err(ErrorResponse::new(
@@ -106,7 +111,7 @@ fn scrape_context(html: String) -> Result<SearchContext, ErrorResponse> {
 // Returns video id
 pub async fn search(q: String) -> Result<SearchResponse, ErrorResponse> {
     info!(&APP_LOGGING, "Searching track: {}", q);
-    let client = reqwest::Client::new();
+    let client = Client::new();
 
     let context_html = get_config_html(&client).await?;
     let context = scrape_context(context_html)?;

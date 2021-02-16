@@ -25,7 +25,6 @@ FROM rust:1.49
 
 # copy the build artifact from the build stage
 COPY --from=build /chromi_tube_backend/target/release/chromi_tube_backend .
-COPY --from=build /chromi_tube_backend/certs ./certs
 
 # set the startup command to run your binary
 CMD ["./chromi_tube_backend"]

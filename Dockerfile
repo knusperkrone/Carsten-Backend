@@ -15,7 +15,6 @@ RUN rm src/*.rs
 
 # copy your source tree
 COPY ./src ./src
-COPY ./certs ./certs
 
 # build for release
 RUN rm ./target/release/deps/chromi_tube_backend*

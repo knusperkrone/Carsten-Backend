@@ -10,7 +10,6 @@ use actix_web::{middleware, web, App, HttpResponse, HttpServer};
 
 use crate::logging::APP_LOGGING;
 use crate::spotify::{CreateTokenRequest, RefreshTokenRequest};
-use actix_cors::Cors;
 
 async fn root() -> HttpResponse {
     HttpResponse::Ok()
@@ -57,7 +56,9 @@ struct SearchParams {
 
 async fn youtube_search(web::Query(params): web::Query<SearchParams>) -> HttpResponse {
     match youtube::search(params.q).await {
-        Ok(resp) => HttpResponse::Ok().json(resp),
+        Ok(resp) => HttpResponse::Ok()
+            .header("Access-Control-Allow-Origin", "*")
+            .json(resp),
         Err(resp) => {
             warn!(APP_LOGGING, "Invalid search: {}", resp);
             HttpResponse::BadRequest().json(resp)
@@ -81,9 +82,9 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+        
             .data(web::JsonConfig::default().limit(4096))
             .wrap(middleware::Logger::default())
-            .wrap(Cors::default())
             .service(web::resource("/").route(web::get().to(root)))
             .service(web::resource("/robots.txt").route(web::get().to(robots)))
             .service(

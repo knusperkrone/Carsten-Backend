@@ -14,7 +14,7 @@ use crate::spotify::{CreateTokenRequest, RefreshTokenRequest};
 async fn root() -> HttpResponse {
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
-        .body("<!DOCTYPE html><html><head></head><body><h1>Carsten works</h1></body></html>")
+        .body("<!DOCTYPE html><html><head></head><body><h1>Carsten works!</h1></body></html>")
 }
 
 async fn robots() -> HttpResponse {

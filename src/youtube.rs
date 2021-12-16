@@ -34,6 +34,7 @@ async fn get_config_html(client: &Client) -> Result<String, ErrorResponse> {
         .send()
         .await?
         .body()
+        .limit(1024 * 1024 * 2)
         .await?;
     Ok(std::str::from_utf8(&body).unwrap().to_owned())
 }
@@ -66,7 +67,7 @@ async fn post_search(
         .send_body(body.to_string())
         .await?
         .body()
-        .limit(1024 * 1024)
+        .limit(1024 * 1024 * 2)
         .await?;
     Ok(std::str::from_utf8(&resp_body).unwrap().to_owned())
 }

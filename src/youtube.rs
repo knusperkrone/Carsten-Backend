@@ -1,7 +1,11 @@
+use std::sync::RwLock;
+
 use crate::error::ErrorResponse;
 use crate::logging::APP_LOGGING;
 
 use actix_web::client::Client;
+use chrono::{DateTime, NaiveDateTime, Utc};
+use once_cell::sync::Lazy;
 use scraper::{Html, Selector};
 use serde::{Deserialize, Serialize};
 
@@ -17,7 +21,7 @@ pub struct SearchResponse {
     id: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Default, Deserialize)]
 struct SearchContext {
     #[serde(rename(deserialize = "INNERTUBE_API_KEY"))]
     key: String,
@@ -27,21 +31,44 @@ struct SearchContext {
     client_version: String,
 }
 
-async fn get_config_html(client: &Client) -> Result<String, ErrorResponse> {
+static CACHED_CONTEXT: Lazy<RwLock<(DateTime<Utc>, SearchContext)>> = Lazy::new(|| {
+    RwLock::new((
+        DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(0, 0), Utc),
+        SearchContext::default(),
+    ))
+});
+
+async fn refresh_context(client: &Client) -> Result<(), ErrorResponse> {
+    let now = Utc::now();
+    let read_guard = CACHED_CONTEXT.read().unwrap();
+    if (now - read_guard.0).num_hours() > 1 {
+        drop(read_guard);
+        let mut write_guard = CACHED_CONTEXT.write().unwrap();
+        // Double-Check-Idiom
+        if (now - write_guard.0).num_hours() > 1 {
+            let context_html = fetch_config_html(&client).await?;
+            let context = scrape_context(context_html)?;
+            *write_guard = (Utc::now(), context);
+        }
+    }
+    Ok(())
+}
+
+async fn fetch_config_html(client: &Client) -> Result<String, ErrorResponse> {
     let body = client
         .get(BASE_URL)
         .header(USER_AGENT, CHROME_AGENT)
         .send()
         .await?
         .body()
-        .limit(1024 * 1024 * 2)
+        .limit(1024 * 1024)
         .await?;
     Ok(std::str::from_utf8(&body).unwrap().to_owned())
 }
 
 async fn post_search(
     client: &Client,
-    context: SearchContext,
+    context: &SearchContext,
     q: String,
 ) -> Result<String, ErrorResponse> {
     let url = &format!(
@@ -67,7 +94,7 @@ async fn post_search(
         .send_body(body.to_string())
         .await?
         .body()
-        .limit(1024 * 1024 * 2)
+        .limit(1024 * 1024)
         .await?;
     Ok(std::str::from_utf8(&resp_body).unwrap().to_owned())
 }
@@ -97,7 +124,13 @@ fn scrape_context(html: String) -> Result<SearchContext, ErrorResponse> {
     for script in scripts {
         for text in script.text() {
             if let Some(index) = text.find(&needle) {
-                let sliced = text.get(index + needle.len()..text.len() - 2).unwrap_or("");
+                // Slice begin 'ytcfg.set('
+                let mut sliced = text.get(index + needle.len()..text.len() - 2).unwrap_or("");
+                // Slice end ');'
+                let last_index = sliced.rfind(')').unwrap_or(sliced.len());
+                sliced = &sliced[0..last_index];
+
+                eprintln!("{}", sliced);
                 let ctx: SearchContext = serde_json::from_str(sliced)?;
                 return Ok(ctx);
             }
@@ -114,9 +147,8 @@ pub async fn search(q: String) -> Result<SearchResponse, ErrorResponse> {
     info!(&APP_LOGGING, "Searching track: {}", q);
     let client = Client::new();
 
-    let context_html = get_config_html(&client).await?;
-    let context = scrape_context(context_html)?;
-    let search_json = post_search(&client, context, q).await?;
+    refresh_context(&client).await?;
+    let search_json = post_search(&client, &CACHED_CONTEXT.read().unwrap().1, q).await?;
     let id = scrape_search_json(search_json)?;
 
     Ok(SearchResponse { id: id })

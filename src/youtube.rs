@@ -155,7 +155,7 @@ pub async fn search(q: String) -> Result<SearchResponse, ErrorResponse> {
 }
 
 #[cfg(test)]
-mod test {
+ mod test {
     use super::*;
 
     #[actix_rt::test]

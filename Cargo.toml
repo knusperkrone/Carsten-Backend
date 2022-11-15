@@ -1,7 +1,7 @@
 [package]
-name = "chromi_tube_backend"
+name = "carsten_backend"
 version = "0.1.0"
-authors = ["Aron Metzig <aron.metzig@interface-ag.de>"]
+authors = ["Aron Metzig"]
 edition = "2018"
 
 [dependencies]

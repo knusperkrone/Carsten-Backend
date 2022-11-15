@@ -1,11 +1,13 @@
 use crate::error::ErrorResponse;
 use crate::logging::APP_LOGGING;
 
+use once_cell::sync::Lazy;
 use actix_web::client::Client;
 use serde::{Deserialize, Serialize};
 
-static PRIVATE_TOKEN: &'static str =
-    "MmIyMTdhMzI4NTc2NDViNzllNjBkZGEwYTU2YjIyNjg6N2E4NTQ5NDMxZTljNGU0Yzk0ODAyYThmYmE2ZjVlOGQ";
+static TOKEN: Lazy<String> = Lazy::new(|| {
+    std::env::var("SPOTIFY_TOKEN").expect("SPOTIFY_TOKEN not provided")
+});
 
 #[derive(Deserialize)]
 pub struct CreateTokenRequest {
@@ -47,7 +49,7 @@ pub async fn create_token(req: CreateTokenRequest) -> Result<CreateTokenResponse
 
     let mut res = client
         .post(token_url)
-        .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
+        .header("Authorization", format!("Basic {}", TOKEN.as_str()))
         .send_form(&[
             ("grant_type", "authorization_code"),
             ("code", &req.auth_code),
@@ -67,7 +69,7 @@ pub async fn refresh_token(
 
     let mut res = client
         .post(refresh_token_url)
-        .header("Authorization", format!("Basic {}", PRIVATE_TOKEN))
+        .header("Authorization", format!("Basic {}", TOKEN.as_str()))
         .send_form(&[
             ("grant_type", "refresh_token"),
             ("refresh_token", &req.refresh_token),

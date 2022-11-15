@@ -68,16 +68,15 @@ async fn youtube_search(web::Query(params): web::Query<SearchParams>) -> HttpRes
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let args: Vec<String> = std::env::args().collect();
-    let bind_addr: &str;
-    if let Some(addr) = args.get(1) {
+    let bind_addr: String;
+    if let Some(addr) = std::env::var("BIND_ADDR").ok() {
         bind_addr = addr;
     } else {
-        bind_addr = "0.0.0.0:8443";
+        bind_addr = "0.0.0.0:8443".to_owned();
     }
     info!(APP_LOGGING, "Binding to address: {}", bind_addr);
 
-    std::env::set_var("RUST_LOG", "actix_web=debug");
+    std::env::set_var("RUST_LOG", "actix_web=info");
     env_logger::init();
 
     HttpServer::new(move || {
